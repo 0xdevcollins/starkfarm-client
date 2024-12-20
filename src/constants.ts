@@ -9,10 +9,18 @@ const LOGOS = {
   WBTC: '/zklend/icons/tokens/wbtc.svg?w=20',
   ETH: '/zklend/icons/tokens/eth.svg?w=20',
   STRK: '/zklend/icons/tokens/strk.svg?w=20',
+  sSTRK: '/zklend/icons/tokens/strk.svg?w=20',
   DAI: '/zklend/icons/tokens/dai.svg?w=20',
 };
 
-export type TokenName = 'USDT' | 'USDC' | 'ETH' | 'STRK' | 'WBTC' | 'DAI';
+export type TokenName =
+  | 'USDT'
+  | 'USDC'
+  | 'ETH'
+  | 'STRK'
+  | 'sSTRK'
+  | 'WBTC'
+  | 'DAI';
 
 const CONSTANTS = {
   DEX_INCENTIVE_URL:
@@ -77,6 +85,19 @@ const CONSTANTS = {
 };
 
 export const TOKENS: TokenInfo[] = [
+  {
+    token: standariseAddress(
+      '0x0260c02fd6942c788b8905d2c1b98b5a98fffd2ec0dfb013aa4b148781e269b6',
+    ),
+    name: 'sSTRK',
+    decimals: 18,
+    displayDecimals: 2,
+    logo: CONSTANTS.LOGOS.STRK,
+    minAmount: MyNumber.fromEther('10', 18),
+    maxAmount: MyNumber.fromEther('10000', 18),
+    stepAmount: MyNumber.fromEther('10', 18),
+    isERC4626: false,
+  },
   {
     token: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7',
     name: 'ETH',
