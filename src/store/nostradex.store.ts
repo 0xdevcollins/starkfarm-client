@@ -23,8 +23,8 @@ export class NostraDex extends Jediswap {
         'STRK-ETH',
         'STRK-USDC',
         'USDC-USDT',
-        'sSTRK-ETH',
-        'sSTRK-USDC',
+        'SSTRK-ETH',
+        'SSTRK-USDC',
       ];
       // Filter and map only the required pools
       Object.values(myData)
