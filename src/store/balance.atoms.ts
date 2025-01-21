@@ -7,6 +7,7 @@ import { atomWithQuery } from 'jotai-tanstack-query';
 import { addressAtom } from '@/store/claims.atoms';
 import ERC20Abi from '@/abi/erc20.abi.json';
 import DeltaNeutralAbi from '@/abi/deltraNeutral.abi.json';
+import DeltaNeutralAbi2 from '@/abi/deltaNeutral.2.abi.json';
 import { Atom } from 'jotai';
 import {
   getTokenInfoFromAddr,
@@ -89,10 +90,25 @@ export async function getERC721PositionValue(
   const provider = new RpcProvider({
     nodeUrl: process.env.NEXT_PUBLIC_RPC_URL,
   });
-  const erc721Contract = new Contract(DeltaNeutralAbi, token.address, provider);
-  const tokenId = num.getDecimalString(address);
-  const result: any = await erc721Contract.call('describe_position', [tokenId]);
-  console.log('erc721 position balData', token.address, result[1]);
+  let result: any = null;
+  try {
+    const erc721Contract = new Contract(
+      DeltaNeutralAbi,
+      token.address,
+      provider,
+    );
+    const tokenId = num.getDecimalString(address);
+    result = await erc721Contract.call('describe_position', [tokenId]);
+  } catch (err) {
+    const erc721Contract = new Contract(
+      DeltaNeutralAbi2,
+      token.address,
+      provider,
+    );
+    const tokenId = num.getDecimalString(address);
+    result = await erc721Contract.call('describe_position', [tokenId]);
+  }
+  console.log('erc721 position balData', token.address, result);
   const tokenInfo = getTokenInfoFromName(token.config.mainTokenName);
   return {
     amount: new MyNumber(
@@ -132,7 +148,13 @@ function getERC721PositionValueAtom(token: NFTInfo | undefined) {
     return {
       queryKey: ['getERC721PositionValue', token?.address],
       queryFn: async ({ queryKey }: any): Promise<BalanceResult> => {
-        return getERC721PositionValue(token, get(addressAtom));
+        console.log('getERC721PositionValueAtom', token);
+        try {
+          return await getERC721PositionValue(token, get(addressAtom));
+        } catch (e) {
+          console.error('getERC721PositionValueAtome', e);
+          return returnEmptyBal();
+        }
       },
       refetchInterval: 5000,
     };

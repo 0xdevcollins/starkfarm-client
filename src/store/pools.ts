@@ -9,6 +9,7 @@ import fetchWithRetry from '@/utils/fetchWithRetry';
 export enum Category {
   Stable = 'Stable Pools',
   STRK = 'STRK Pools',
+  ETH = 'ETH Pools',
   Others = 'Others',
 }
 
@@ -50,7 +51,7 @@ export interface PoolInfo extends PoolMetadata {
   tvl: number;
   apr: number; // not in %
   aprSplits: APRSplit[];
-  category: Category;
+  category: Category[];
   type: PoolType;
   isLoading?: boolean;
   additional: {
@@ -77,7 +78,7 @@ export function getDefaultPoolInfo(): PoolInfo {
     apr: 0,
     tvl: 0,
     aprSplits: [],
-    category: Category.Others,
+    category: [Category.Others],
     type: PoolType.Derivatives,
     additional: {
       riskFactor: 0,
@@ -186,3 +187,36 @@ export const StrkLendingIncentivesAtom = atom((get) => {
   }
   return _data;
 });
+
+/**
+  Given pool name, returns appropriate category
+  @param poolName: name of the pool
+  @param isStable: default condition, suitable for pools with just one token like lending
+  @returns: Category[]
+*/
+export function getCategoriesFromName(
+  poolName: string,
+  isStable: boolean = ['USDC', 'USDT'].includes(poolName),
+): Category[] {
+  const categories = [];
+
+  // a pool can be both STRK and ETH
+  if (poolName.includes('STRK')) {
+    categories.push(Category.STRK);
+  }
+  if (poolName.includes('ETH')) {
+    categories.push(Category.ETH);
+  }
+
+  // if a pool is already STRK or ETH, it cant be stable
+  if (isStable && categories.length === 0) {
+    categories.push(Category.Stable);
+  }
+
+  // fallback
+  if (categories.length === 0) {
+    categories.push(Category.Others);
+  }
+
+  return categories;
+}

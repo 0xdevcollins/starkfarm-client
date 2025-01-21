@@ -1,218 +1,181 @@
-import vesuAbi from '@/abi/vesu.abi.json';
-import vesuInterestRateAbi from '@/abi/vesuInterestRate.abi.json';
 import { atom } from 'jotai';
-import { Contract, RpcProvider } from 'starknet';
 import {
   APRSplit,
+  getCategoriesFromName,
   PoolInfo,
   PoolMetadata,
-  ProtocolAtoms,
+  PoolType,
+  ProtocolAtoms2,
   StrkLendingIncentivesAtom,
 } from './pools';
-import { LendingSpace } from './lending.base';
-import { atomWithQuery, AtomWithQueryResult } from 'jotai-tanstack-query';
+import { AtomWithQueryResult } from 'jotai-tanstack-query';
 import { IDapp } from './IDapp.store';
-import { getTokenInfoFromName } from '@/utils';
+import { getPrice, getTokenInfoFromName } from '@/utils';
+import { customAtomWithQuery } from '@/utils/customAtomWithQuery';
+import MyNumber from '@/utils/MyNumber';
+import { StrategyLiveStatus } from '@/strategies/IStrategy';
+import fetchWithRetry from '@/utils/fetchWithRetry';
 
-// Initialize the provider
-const provider = new RpcProvider({ nodeUrl: process.env.NEXT_PUBLIC_RPC_URL });
-
-// Define the ABIs for the contracts
-const VesuAbi = vesuAbi;
-const VesuSingleton =
-  '0x02545b2e5d519fc230e9cd781046d3a64e092114f07e44771e0d719d148725ef';
-const VesuExtensionAddress =
-  '0x2334189e831d804d4a11d3f71d4a982ec82614ac12ed2e9ca2f8da4e6374fa';
-
-// Utility function to convert a string to BigInt and then to hex
-const toBigIntHex = (id: string): string => {
-  const bigIntValue = BigInt(id);
-  return `0x${bigIntValue.toString(16)}`;
-};
-
-// Function to get Utilization
-const getUtilisation = async (poolId: string, tokenAddress: string) => {
-  const contract = new Contract(VesuAbi, VesuSingleton, provider);
-  const poolidHex = toBigIntHex(poolId);
-  const res: any = await contract.call('utilization_unsafe', [
-    poolidHex,
-    tokenAddress,
-  ]);
-  return res;
-};
-
-// Function to get Asset Info
-const getAssetInfo = async (poolId: string, tokenAddress: string) => {
-  const contract = new Contract(VesuAbi, VesuSingleton, provider);
-
-  const poolidHex = toBigIntHex(poolId);
-  const res: any = await contract.call('asset_config_unsafe', [
-    poolidHex,
-    tokenAddress,
-  ]);
-  return res[0];
-};
-
-// Function to get Base APY
-const getBaseApy = async (poolId: string, tokenAddress: string) => {
-  const contract = new Contract(
-    vesuInterestRateAbi,
-    VesuExtensionAddress,
-    provider,
-  );
-
-  const utilization = await getUtilisation(poolId, tokenAddress);
-  const assetInfo = await getAssetInfo(poolId, tokenAddress);
-  const interestRate = await contract.call('interest_rate', [
-    poolId,
-    tokenAddress,
-    utilization,
-    assetInfo.last_updated,
-    assetInfo.last_full_utilization_rate,
-  ]);
-  const apy =
-    (Number(utilization) / 10 ** 18) *
-    ((1 + Number(interestRate) / 10 ** 18) ** (360 * 86400) - 1);
-
-  return apy;
-};
-
-interface VesuPool {
+export interface VesuPool {
   id: string;
-  isVesu: boolean;
-  tokenA: string;
-  poolId: string;
-  tokenAddress: string;
-  rewardApr: string;
-  baseApr: string;
-  tvl: string;
+  name: string; // e.g. Genesis, Re7 xSTRK
+  isVerified: boolean;
+  assets: VesuAsset[];
 }
 
-const poolsData: VesuPool[] = [
-  {
-    id: 'ETH',
-    isVesu: true,
-    tokenA: 'ETH',
-    poolId:
-      '2198503327643286920898110335698706244522220458610657370981979460625005526824',
-    tokenAddress: getTokenInfoFromName('ETH').token,
-    rewardApr: '',
-    baseApr: '',
-    tvl: '',
-  },
-  {
-    id: 'STRK',
-    isVesu: true,
-    tokenA: 'STRK',
-    poolId:
-      '2198503327643286920898110335698706244522220458610657370981979460625005526824',
-    tokenAddress: getTokenInfoFromName('STRK').token,
-    rewardApr: '',
-    baseApr: '',
-    tvl: '',
-  },
-  {
-    id: 'USDC',
-    isVesu: true,
-    tokenA: 'USDC',
-    poolId:
-      '2198503327643286920898110335698706244522220458610657370981979460625005526824',
-    tokenAddress: getTokenInfoFromName('USDC').token,
-    rewardApr: '',
-    baseApr: '',
-    tvl: '',
-  },
-  {
-    id: 'USDT',
-    isVesu: true,
-    tokenA: 'USDT',
-    poolId:
-      '2198503327643286920898110335698706244522220458610657370981979460625005526824',
-    tokenAddress: getTokenInfoFromName('USDT').token,
-    rewardApr: '',
-    baseApr: '',
-    tvl: '',
-  },
-];
+interface VesuAsset {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  stats: {
+    totalSupplied: {
+      value: string;
+      decimals: number;
+    };
+    totalDebt: {
+      value: string;
+      decimals: number;
+    };
+    supplyApy: {
+      value: string;
+      decimals: number;
+    };
+    borrowApr: {
+      value: string;
+      decimals: number;
+    };
+  };
+}
 
-// Fetch and update pools data with base APR values
-async function fetchAndUpdatePoolsData() {
-  for (const pool of poolsData) {
-    try {
-      const res = await getBaseApy(pool.poolId, pool.tokenAddress);
-      pool.baseApr = res.toString();
-      console.log(res, pool, 'pool-res');
-    } catch (e) {
-      console.error('Error fetchAndUpdatePoolsData', e);
-      pool.baseApr = '0';
-    }
+function bitIntToNumber(info: { value: string; decimals: number }) {
+  return Number(
+    new MyNumber(info.value, info.decimals).toEtherToFixedDecimals(6),
+  );
+}
+
+async function getVesuPoolInfo(pool: VesuPool, asset: VesuAsset) {
+  try {
+    const tokenInfo = getTokenInfoFromName(asset.symbol);
+    const price = await getPrice(tokenInfo);
+    const tvlInToken = bitIntToNumber(asset.stats.totalSupplied);
+    console.log('Vesu pool', pool, asset, price, tvlInToken);
+    const myPool: PoolInfo = {
+      pool: {
+        id: `${vesu.name}_${pool.id}_${asset.symbol}`,
+        name: `${asset.symbol} (${pool.name})`,
+        logos: [tokenInfo.logo],
+      },
+      protocol: {
+        name: vesu.name,
+        link: vesu.link,
+        logo: vesu.logo,
+      },
+      apr: bitIntToNumber(asset.stats.supplyApy),
+      tvl: tvlInToken * price,
+      aprSplits: [
+        {
+          apr: bitIntToNumber(asset.stats.supplyApy),
+          title: 'Supply APY',
+          description: '',
+        },
+      ],
+      category: getCategoriesFromName(asset.symbol),
+      type: PoolType.Lending,
+      borrow: {
+        apr: bitIntToNumber(asset.stats.borrowApr),
+        borrowFactor: 0,
+      },
+      lending: {
+        collateralFactor: 0,
+      },
+      additional: {
+        tags: [StrategyLiveStatus.ACTIVE],
+        isAudited: false,
+        riskFactor: 0.5,
+      },
+    };
+    return myPool;
+  } catch (e) {
+    console.warn('Error parsing Vesu pool', pool.name, asset.name, e);
+    return null;
   }
-  return poolsData;
 }
-
-console.log(poolsData, 'updated-pool-data');
 
 export class Vesu extends IDapp<VesuPool[]> {
   name = 'Vesu';
   link = 'https://www.vesu.xyz/markets';
-  logo = 'https://assets.strkfarm.xyz/integrations/vesu/logo.png';
+  logo = `https://static-assets-8zct.onrender.com/integrations/vesu/logo.png`;
   incentiveDataKey = 'Vesu';
 
-  _computePoolsInfo(data: any) {
-    return LendingSpace.computePoolsInfo(
-      data,
-      this.incentiveDataKey,
-      {
-        name: this.name,
-        link: this.link,
-        logo: this.logo,
-      },
-      this.commonVaultFilter,
-    );
+  handleDefiSpring(pools: PoolInfo[], data: any) {
+    const myData = data[this.incentiveDataKey];
+    if (!myData) return [];
+
+    return pools.map((p) => {
+      // cause names are like "STRK (Genesis)"
+      const symbol = p.pool.name.split(' (')[0];
+      const arr = myData[symbol];
+      if (arr.length === 0) return p;
+
+      const aprSplit: APRSplit = {
+        apr: arr[arr.length - 1].strk_grant_apr_nrs,
+        title: 'STRK rewards',
+        description: 'Starknet DeFi Spring incentives',
+      };
+      p.aprSplits.push(aprSplit);
+      if (aprSplit.apr != 'Err') p.apr += aprSplit.apr;
+
+      return p;
+    });
   }
 
-  getBaseAPY(p: PoolInfo, data: AtomWithQueryResult<any, Error>) {
-    let baseAPY: number | 'Err' = 'Err';
-    let splitApr: APRSplit | null = null;
-    let metadata: PoolMetadata | null = null;
-    if (data.isSuccess) {
-      const items: VesuPool[] = data.data;
-      const item = items.find((doc) => doc.id === p.pool.name);
-      if (item) {
-        baseAPY = Number(item.baseApr);
-        splitApr = {
-          apr: baseAPY,
-          title: 'Base APY',
-          description: '',
-        };
-        metadata = {
-          borrow: {
-            apr: 0,
-            borrowFactor: 0,
-          },
-          lending: {
-            collateralFactor: 0,
-          },
-        };
+  getBaseAPY(
+    p: PoolInfo,
+    data: AtomWithQueryResult<VesuPool[], Error>,
+  ): {
+    baseAPY: number | 'Err';
+    splitApr: APRSplit | null;
+    metadata: PoolMetadata | null;
+  } {
+    return {
+      baseAPY: 'Err',
+      splitApr: null,
+      metadata: null,
+    };
+  }
+
+  async getBaseAPYs(): Promise<PoolInfo[]> {
+    console.log('Fetching Vesu base APYs');
+    const result = await fetchWithRetry('/vesu/pools').then((res) =>
+      res ? res.json() : null,
+    );
+    if (!result) return [];
+    const poolsData: VesuPool[] = result.data;
+
+    const pools: Promise<PoolInfo | null>[] = [];
+    for (let i = 0; i < poolsData.length; i++) {
+      if (!poolsData[i].isVerified) continue;
+      for (let j = 0; j < poolsData[i].assets.length; j++) {
+        pools.push(getVesuPoolInfo(poolsData[i], poolsData[i].assets[j]));
       }
     }
-    return {
-      baseAPY,
-      splitApr,
-      metadata,
-    };
+
+    const output = await Promise.all(pools);
+    console.log('Vesu pools', output);
+    return output.filter((p) => p !== null);
   }
 }
 
 export const vesu = new Vesu();
 
-const VesuAtoms: ProtocolAtoms = {
-  baseAPRs: atomWithQuery((get) => ({
-    queryKey: ['baseAPRs', vesu.name],
-    queryFn: async ({ queryKey }: any): Promise<VesuPool[]> => {
-      return fetchAndUpdatePoolsData();
+const VesuAtoms: ProtocolAtoms2 = {
+  baseAPRs: customAtomWithQuery({
+    queryFn: async () => {
+      return vesu.getBaseAPYs();
     },
-  })),
+    queryKey: 'vesu_base_aprs',
+  }),
   pools: atom((get) => {
     const poolsInfo = get(StrkLendingIncentivesAtom);
     const empty: PoolInfo[] = [];
@@ -221,9 +184,11 @@ const VesuAtoms: ProtocolAtoms = {
 
     const baseInfo = get(VesuAtoms.baseAPRs);
 
-    if (poolsInfo.data) {
-      const pools = vesu._computePoolsInfo(poolsInfo.data);
-      return vesu.addBaseAPYs(pools, baseInfo);
+    if (baseInfo.data) {
+      if (poolsInfo.data)
+        return vesu.handleDefiSpring(baseInfo.data, poolsInfo.data);
+
+      return baseInfo.data;
     }
     return empty;
   }),

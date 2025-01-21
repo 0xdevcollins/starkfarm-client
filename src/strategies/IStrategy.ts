@@ -1,5 +1,6 @@
 import { IDapp } from '@/store/IDapp.store';
 import { BalanceResult, getBalanceAtom } from '@/store/balance.atoms';
+import { IndexedPoolData } from '@/store/endur.store';
 import { LendingSpace } from '@/store/lending.base';
 import { Category, PoolInfo } from '@/store/pools';
 import { zkLend } from '@/store/zklend.store';
@@ -8,7 +9,7 @@ import { Atom, atom } from 'jotai';
 import { AtomWithQueryResult, atomWithQuery } from 'jotai-tanstack-query';
 import { Call, ProviderInterface } from 'starknet';
 
-interface Step {
+export interface Step {
   name: string;
   optimizer: (
     pools: PoolInfo[],
@@ -81,6 +82,7 @@ export interface IStrategySettings {
   }[];
   hideHarvestInfo?: boolean;
   is_promoted?: boolean;
+  isAudited?: boolean;
 }
 
 export interface AmountInfo {
@@ -222,7 +224,9 @@ export class IStrategy extends IStrategyProps {
     amount: string,
     prevActions: StrategyAction[],
   ) {
-    const eligiblePools = pools.filter((p) => p.category == Category.Stable);
+    const eligiblePools = pools.filter((p) =>
+      p.category.includes(Category.Stable),
+    );
     if (!eligiblePools) throw new Error(`${this.tag}: [F1] no eligible pools`);
     return eligiblePools;
   }
@@ -269,7 +273,9 @@ export class IStrategy extends IStrategyProps {
 
   filterTokenByProtocol(
     tokenName: string,
-    protocol: IDapp<LendingSpace.MyBaseAprDoc[]> = zkLend,
+    protocol:
+      | IDapp<LendingSpace.MyBaseAprDoc[]>
+      | IDapp<IndexedPoolData> = zkLend,
   ) {
     return (
       pools: PoolInfo[],

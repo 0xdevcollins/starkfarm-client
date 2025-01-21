@@ -1,3 +1,4 @@
+import { getHosturl } from '@/utils';
 import { customAtomWithQuery } from './customAtomWithQuery';
 import fetchWithRetry from './fetchWithRetry';
 
@@ -12,7 +13,7 @@ export const customAtomWithFetch = (args: {
     queryFn: async () => {
       const urlPrefix =
         typeof window === 'undefined' && !url.includes('http')
-          ? process.env.HOSTNAME || 'https://app.strkfarm.xyz'
+          ? process.env.HOSTNAME || `https://app.${getHosturl()}`
           : '';
 
       try {

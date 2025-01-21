@@ -40,6 +40,11 @@
     tslib "^2.3.0"
     zen-observable-ts "^1.2.5"
 
+"@avnu/avnu-sdk@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@avnu/avnu-sdk/-/avnu-sdk-3.0.0.tgz#e4cb63d26aa6c244040963fcef44e2d95c15cba9"
+  integrity sha512-BqqazrXDKn5RE1anyl9Ba+Kd/4VaKNsdKTl0ryTfXhMIYp+R4dXMaLD40emfXd+25kxM00xPKiZOiGHl2ntG5g==
+
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.21.4", "@babel/code-frame@^7.24.7":
   version "7.24.7"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.24.7.tgz#882fd9e09e8ee324e496bd040401c6f046ef4465"

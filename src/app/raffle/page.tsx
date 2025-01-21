@@ -8,6 +8,7 @@ import RaffleTimer from './_components/raffle-timer';
 import RegisterRaffle from './_components/register-raffle';
 import ShareOnX from './_components/share-on-x';
 import TotalTickets from './_components/total-tickets';
+import { getHosturl } from '@/utils';
 
 const Raffle: NextPage = () => {
   return (
@@ -24,7 +25,7 @@ const Raffle: NextPage = () => {
 
           <Button
             as="a"
-            href="https://docs.strkfarm.xyz/p/community/raffle"
+            href={`https://docs.${getHosturl()}/p/community/raffle`}
             target="_blank"
             className="border-white border px-4 py-2.5 rounded-md text-white text-sm font-bold transition-all active:scale-90 mt-3"
           >

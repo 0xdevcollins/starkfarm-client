@@ -2,6 +2,7 @@ import CONSTANTS, { TokenName } from '@/constants';
 import {
   APRSplit,
   Category,
+  getCategoriesFromName,
   PoolInfo,
   PoolMetadata,
   PoolType,
@@ -62,14 +63,12 @@ export class Haiko extends IDapp<Pool[]> {
         .filter(this.commonVaultFilter)
         .forEach((poolName) => {
           const arr = myData[poolName];
-          let category = Category.Others;
-          let riskFactor = 3;
-          if (poolName === 'USDC/USDT') {
-            category = Category.Stable;
-            riskFactor = 0.5;
-          } else if (poolName.includes('STRK')) {
-            category = Category.STRK;
-          }
+          const isStable = poolName === 'USDC/USDT';
+          const category: Category[] = getCategoriesFromName(
+            poolName,
+            isStable,
+          );
+          const riskFactor = isStable ? 0.5 : 3;
 
           const tokens: TokenName[] = <TokenName[]>poolName.split('/');
           const logo1 = CONSTANTS.LOGOS[tokens[0]];

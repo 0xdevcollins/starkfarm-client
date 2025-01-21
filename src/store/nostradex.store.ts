@@ -1,5 +1,5 @@
 import CONSTANTS, { TokenName } from '@/constants';
-import { Category, PoolType } from './pools';
+import { Category, getCategoriesFromName, PoolType } from './pools';
 import { atom } from 'jotai';
 import { PoolInfo, ProtocolAtoms, StrkIncentivesAtom } from './pools';
 import { Jediswap } from './jedi.store';
@@ -40,14 +40,14 @@ export class NostraDex extends Jediswap {
             poolData.baseApr === '0' ? 0.0 : parseFloat(poolData.baseApr);
           const rewardApr = parseFloat(poolData.rewardApr);
 
-          let category = Category.Others;
-          let riskFactor = 3;
-          if (poolData.id === 'USDC-USDT') {
-            category = Category.Stable;
-            riskFactor = 0.5;
-          } else if (poolData.id.includes('STRK')) {
-            category = Category.STRK;
-          }
+          const _poolName = poolData.id.replace('-', '/');
+          const isStable = _poolName === 'USDC/USDT';
+          const category: Category[] = getCategoriesFromName(
+            _poolName,
+            isStable,
+          );
+          const riskFactor = isStable ? 0.5 : 3;
+
           const poolInfo: PoolInfo = {
             pool: {
               id: this.getPoolId(this.name, poolData.id.slice(0, -6)),

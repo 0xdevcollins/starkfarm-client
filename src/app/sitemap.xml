@@ -2,12 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
     <url>
-        <loc>https://www.strkfarm.xyz</loc>
+        <loc>https://www.strkfarm.com</loc>
         <lastmod>2024-05-12T04:16:05+00:00</lastmod>
         <priority>1</priority>
     </url>
     <url>
-     	<loc>https://beta.strkfarm.xyz</loc>
+     	<loc>https://app.strkfarm.com</loc>
         <lastmod>2024-05-12T04:16:05+00:00</lastmod>
         <priority>0.5</priority>
     </url>

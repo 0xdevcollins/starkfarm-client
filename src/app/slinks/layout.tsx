@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react';
 import React from 'react';
 
 import '../globals.css';
+import { getHosturl } from '@/utils';
 
 export default function RootLayout({
   children,
@@ -25,7 +26,7 @@ export default function RootLayout({
         />
         <meta
           name="twitter:player"
-          content="https://beta.strkfarm.xyz/slinks"
+          content={`https://beta.${getHosturl()}/slinks`}
         />
         <meta name="twitter:player:width" content="360" />
         <meta name="twitter:player:height" content="560" />
@@ -34,7 +35,10 @@ export default function RootLayout({
           content="https://static-assets-8zct.onrender.com/strkfarm/preview.png"
         />
 
-        <meta property="og:url" content="https://beta.strkfarm.xyz/slinks" />
+        <meta
+          property="og:url"
+          content={`https://beta.${getHosturl()}/slinks`}
+        />
         <meta
           property="og:title"
           content="STRKFarm | Best Yields on Starknet"

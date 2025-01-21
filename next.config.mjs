@@ -45,6 +45,14 @@ const nextConfig = {
         source: '/nimbora/:path*',
         destination: 'https://stats.nimbora.io/:path*',
       },
+      {
+        source: '/imagedelivery/:path*',
+        destination: 'https://imagedelivery.net/0xPAQaDtnQhBs8IzYRIlNg/:path*',
+      },
+      {
+        source: '/vesu/:path*',
+        destination: 'https://api.vesu.xyz/:path*',
+      },
     ];
   },
   async redirects() {

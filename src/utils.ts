@@ -3,7 +3,6 @@ import { num } from 'starknet';
 import { TOKENS } from './constants';
 import toast from 'react-hot-toast';
 import { TokenInfo } from './strategies/IStrategy';
-import axios from 'axios';
 import fetchWithRetry from './utils/fetchWithRetry';
 
 export function getUniqueStrings(arr: Array<string>) {
@@ -96,8 +95,11 @@ export function generateReferralCode() {
 }
 
 export function getReferralUrl(referralCode: string) {
-  if (window.location.origin.includes('app.strkfarm.xyz')) {
-    return `https://strkfarm.xyz/r/${referralCode}`;
+  if (
+    window.location.origin.includes('app.strkfarm.xyz') ||
+    window.location.origin.includes('app.strkfarm.com')
+  ) {
+    return `https://${getHosturl()}/r/${referralCode}`;
   }
   return `${window.location.origin}/r/${referralCode}`;
 }
@@ -149,11 +151,11 @@ export function copyReferralLink(refCode: string) {
 }
 
 export async function getPrice(tokenInfo: TokenInfo) {
-  // try {
-  //   return await getPriceFromMyAPI(tokenInfo);
-  // } catch (e) {
-  //   console.warn('getPriceFromMyAPI error', e);
-  // }
+  try {
+    return await getPriceFromMyAPI(tokenInfo);
+  } catch (e) {
+    console.warn('getPriceFromMyAPI error', e);
+  }
   console.log('getPrice coinbase', tokenInfo.name);
   const priceInfo = await fetchWithRetry(
     `https://api.coinbase.com/v2/prices/${tokenInfo.name}-USDT/spot`,
@@ -172,25 +174,38 @@ export function getEndpoint() {
   return (
     (typeof window === 'undefined'
       ? process.env.HOSTNAME
-      : window.location.origin) || 'https://app.strkfarm.xyz'
+      : window.location.origin) || 'https://app.strkfarm.com'
   );
+}
+
+export function getHosturl() {
+  const FALLBACK = 'strkfarm.com';
+  try {
+    return (
+      (typeof window !== 'undefined'
+        ? window.location.hostname.split('.').slice(-2).join('.')
+        : null) || FALLBACK
+    );
+  } catch (e) {
+    return FALLBACK;
+  }
 }
 
 export async function getPriceFromMyAPI(tokenInfo: TokenInfo) {
   console.log('getPrice from redis', tokenInfo.name);
 
   const endpoint = getEndpoint();
-  if (endpoint.includes('localhost')) {
-    throw new Error('getEndpoint: skip redis');
-  }
-  const priceInfo = await axios.get(`${endpoint}/api/price/${tokenInfo.name}`);
+  const url = `${endpoint}/api/price/${tokenInfo.name}`;
+  console.log('getPrice url', url);
+  const priceInfoRes = await fetch(url);
+  const priceInfo = await priceInfoRes.json();
   const now = new Date();
-  const priceTime = new Date(priceInfo.data.timestamp);
+  const priceTime = new Date(priceInfo.timestamp);
   if (now.getTime() - priceTime.getTime() > 900000) {
     // 15 mins
     throw new Error('Price is stale');
   }
-  const price = Number(priceInfo.data.price);
+  const price = Number(priceInfo.price);
   return price;
 }
 

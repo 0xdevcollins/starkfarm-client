@@ -23,7 +23,7 @@ interface PoolData {
   };
 }
 
-interface IndexedPoolData {
+export interface IndexedPoolData {
   [key: string]: PoolData[];
 }
 
@@ -97,7 +97,7 @@ const EndurAtoms = {
             description: 'Includes fees & Defi spring rewards',
           },
         ],
-        category: Category.STRK,
+        category: [Category.STRK],
         type: PoolType.Staking,
         additional: {
           riskFactor: 0.5,

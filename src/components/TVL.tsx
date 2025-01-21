@@ -2,7 +2,7 @@ import { addressAtom } from '@/store/claims.atoms';
 import { referralCodeAtom } from '@/store/referral.store';
 import { strategiesAtom } from '@/store/strategies.atoms';
 import { dAppStatsAtom, userStatsAtom } from '@/store/utils.atoms';
-import { copyReferralLink } from '@/utils';
+import { copyReferralLink, getHosturl } from '@/utils';
 import { CopyIcon } from '@chakra-ui/icons';
 import {
   Box,
@@ -87,7 +87,7 @@ const TVL: React.FC = () => {
               <Tooltip label="Learn more">
                 {/* TODO: update the url */}
                 <Link
-                  href="https://docs.strkfarm.xyz/p/community/referral-campaign"
+                  href={`https://docs.${getHosturl()}/p/community/referral-campaign`}
                   target="_blank"
                 >
                   (i)

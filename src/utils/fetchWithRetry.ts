@@ -1,3 +1,5 @@
+import { getHosturl } from '@/utils';
+
 async function fetchWithRetry(
   url: string,
   options: any = {},
@@ -6,9 +8,14 @@ async function fetchWithRetry(
   const maxRetries = 3;
   const delay = 1000;
 
+  const urlPrefix =
+    typeof window === 'undefined' && !url.includes('http')
+      ? process.env.HOSTNAME || `https://app.${getHosturl()}`
+      : '';
+
   for (let i = 0; i < maxRetries; i++) {
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(`${urlPrefix}${url}`, options);
       if (response.ok) {
         return response;
       }

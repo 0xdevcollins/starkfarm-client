@@ -1,26 +1,25 @@
 import { atom } from 'jotai';
-import { AutoTokenStrategy } from '@/strategies/auto_strk.strat';
 import {
   IStrategy,
   IStrategyProps,
   StrategyLiveStatus,
 } from '@/strategies/IStrategy';
 import CONSTANTS from '@/constants';
-import { DeltaNeutralMM } from '@/strategies/delta_neutral_mm';
 import Mustache from 'mustache';
 import { getTokenInfoFromName } from '@/utils';
 import { allPoolsAtomUnSorted, privatePoolsAtom } from './protocols';
-import { DeltaNeutralMM2 } from '@/strategies/delta_neutral_mm_2';
-import { AutoXSTRKStrategy } from '@/strategies/auto_xstrk.strat';
 import EndurAtoms, { endur } from './endur.store';
 import { getDefaultPoolInfo, PoolInfo } from './pools';
+import { AutoTokenStrategy } from '@/strategies/auto_strk.strat';
+import { DeltaNeutralMM } from '@/strategies/delta_neutral_mm';
+import { DeltaNeutralMM2 } from '@/strategies/delta_neutral_mm_2';
+import { DeltaNeutralMMVesuEndur } from '@/strategies/delta_neutral_mm_vesu_endur';
 
 export interface StrategyInfo extends IStrategyProps {
   name: string;
 }
 
 export function getStrategies() {
-  // const simpleStableStrat = new SimpleStableStrategy();
   const autoStrkStrategy = new AutoTokenStrategy(
     'STRK',
     'Auto Compounding STRK',
@@ -29,6 +28,7 @@ export function getStrategies() {
     CONSTANTS.CONTRACTS.AutoStrkFarm,
     {
       maxTVL: 2000000,
+      isAudited: true,
     },
   );
   const autoUSDCStrategy = new AutoTokenStrategy(
@@ -39,6 +39,7 @@ export function getStrategies() {
     CONSTANTS.CONTRACTS.AutoUsdcFarm,
     {
       maxTVL: 2000000,
+      isAudited: true,
     },
   );
 
@@ -61,6 +62,7 @@ export function getStrategies() {
     StrategyLiveStatus.NEW,
     {
       maxTVL: 1500000,
+      isAudited: true,
       // alerts,
     },
   );
@@ -82,6 +84,7 @@ export function getStrategies() {
           tab: 'deposit',
         },
       ],
+      isAudited: true,
     },
   );
   const deltaNeutralMMSTRKETH = new DeltaNeutralMM(
@@ -94,6 +97,7 @@ export function getStrategies() {
     StrategyLiveStatus.NEW,
     {
       maxTVL: 1500000,
+      isAudited: true,
       // alerts,
     },
   );
@@ -115,19 +119,42 @@ export function getStrategies() {
           tab: 'deposit',
         },
       ],
+      isAudited: false,
     },
   );
 
-  const xSTRKStrategy = new AutoXSTRKStrategy(
-    'Stake STRK',
-    'Endur is Starknet’s dedicated staking platform, where you can stake STRK to earn staking rewards. This strategy, built on Endur, is an incentivized vault that boosts returns by offering additional rewards. In the future, it may transition to auto-compounding on DeFi Spring, reinvesting rewards for maximum growth. Changes will be announced at least three days in advance on our socials.',
-    CONSTANTS.CONTRACTS.AutoxSTRKFarm,
+  const xSTRKDescription = `Deposit your {{token1}} to automatically loop your funds via Endur and Vesu to create a delta neutral position. This strategy is designed to maximize your yield on {{token1}}. Your position is automatically adjusted periodically to maintain a healthy health factor. You receive a NFT as representation for your stake on STRKFarm. You can withdraw anytime by redeeming your NFT for {{token2}}.`;
+  const deltaNeutralxSTRKSTRK = new DeltaNeutralMMVesuEndur(
+    getTokenInfoFromName('STRK'),
+    'xSTRK Sensei',
+    Mustache.render(xSTRKDescription, { token1: 'STRK', token2: 'xSTRK' }),
+    'xSTRK',
+    CONSTANTS.CONTRACTS.DeltaNeutralxSTRKSTRKXL,
+    [1, 1, 0.725, 1.967985], // precomputed factors based on strategy math
+    StrategyLiveStatus.HOT,
     {
-      maxTVL: 2000000,
-      alerts: [],
-      is_promoted: true,
+      maxTVL: 1000000,
+      alerts: [
+        {
+          type: 'info',
+          text: 'Note: On withdrawal, you will receive xSTRK. You can use xSTRK as STRK for most use-cases, however, you can redeem it for STRK anytime on endur.fi',
+          tab: 'withdraw',
+        },
+      ],
+      isAudited: false,
     },
   );
+
+  // const xSTRKStrategy = new AutoXSTRKStrategy(
+  //   'Stake STRK',
+  //   'Endur is Starknet’s dedicated staking platform, where you can stake STRK to earn staking rewards. This strategy, built on Endur, is an incentivized vault that boosts returns by offering additional rewards. In the future, it may transition to auto-compounding on DeFi Spring, reinvesting rewards for maximum growth. Changes will be announced at least three days in advance on our socials.',
+  //   CONSTANTS.CONTRACTS.AutoxSTRKFarm,
+  //   {
+  //     maxTVL: 2000000,
+  //     alerts: [],
+  //     is_promoted: true,
+  //   },
+  // );
 
   const strategies: IStrategy[] = [
     autoStrkStrategy,
@@ -136,6 +163,7 @@ export function getStrategies() {
     deltaNeutralMMETHUSDC,
     deltaNeutralMMSTRKETH,
     deltaNeutralMMETHUSDCReverse,
+    deltaNeutralxSTRKSTRK,
     // xSTRKStrategy,
   ];
 
@@ -167,6 +195,7 @@ export const strategiesAtom = atom<StrategyInfo[]>((get) => {
     (p) =>
       p.protocol.name === 'zkLend' ||
       p.protocol.name === 'Nostra' ||
+      p.protocol.name === 'Vesu' ||
       p.protocol.name === endur.name,
   );
 

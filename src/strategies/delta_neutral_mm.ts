@@ -25,7 +25,6 @@ import {
 } from '@/store/balance.atoms';
 import { atom } from 'jotai';
 import { IDapp } from '@/store/IDapp.store';
-import { LendingSpace } from '@/store/lending.base';
 
 export class DeltaNeutralMM extends IStrategy {
   riskFactor = 0.75;
@@ -36,8 +35,8 @@ export class DeltaNeutralMM extends IStrategy {
   readonly stepAmountFactors: number[];
   fee_factor = 0.1; // 10% fee
 
-  protocol1: IDapp<LendingSpace.MyBaseAprDoc[]>;
-  protocol2: IDapp<LendingSpace.MyBaseAprDoc[]>;
+  protocol1: IDapp<any>;
+  protocol2: IDapp<any>;
   constructor(
     token: TokenInfo,
     name: string,
@@ -47,8 +46,8 @@ export class DeltaNeutralMM extends IStrategy {
     stepAmountFactors: number[],
     liveStatus: StrategyLiveStatus,
     settings: IStrategySettings,
-    protocol1: IDapp<LendingSpace.MyBaseAprDoc[]> = zkLend,
-    protocol2: IDapp<LendingSpace.MyBaseAprDoc[]> = nostraLending,
+    protocol1: IDapp<any> = zkLend,
+    protocol2: IDapp<any> = nostraLending,
   ) {
     const rewardTokens = [{ logo: CONSTANTS.LOGOS.STRK }];
     const nftInfo = NFTS.find(
@@ -72,41 +71,12 @@ export class DeltaNeutralMM extends IStrategy {
     this.token = token;
     this.protocol1 = protocol1;
     this.protocol2 = protocol2;
+    this.secondaryToken = secondaryTokenName;
+    this.strategyAddress = strategyAddress;
 
-    this.steps = [
-      {
-        name: `Supply's your ${token.name} to ${protocol1.name}`,
-        optimizer: this.optimizer,
-        filter: [this.filterMainToken],
-      },
-      {
-        name: `Borrow ${secondaryTokenName} from ${protocol1.name}`,
-        optimizer: this.optimizer,
-        filter: [this.filterSecondaryToken],
-      },
-      {
-        name: `Deposit ${secondaryTokenName} to ${protocol2.name}`,
-        optimizer: this.optimizer,
-        filter: [this.filterSecondaryToken],
-      },
-      {
-        name: `Borrow ${token.name} from ${protocol2.name}`,
-        optimizer: this.optimizer,
-        filter: [this.filterMainToken],
-      },
-      {
-        name: `Loop back to step 1, repeat 3 more times`,
-        optimizer: this.getLookRepeatYieldAmount,
-        filter: [this.filterMainToken],
-      },
-      {
-        name: `Re-invest your STRK Rewards every 7 days (Compound)`,
-        optimizer: this.compounder,
-        filter: [this.filterTokenByProtocol('STRK', this.protocol1)],
-      },
-    ];
+    this.steps = this.getSteps();
 
-    if (stepAmountFactors.length != 5) {
+    if (stepAmountFactors.length != this.getSteps().length - 1) {
       throw new Error(
         'stepAmountFactors length should be equal to steps length',
       );
@@ -121,8 +91,41 @@ export class DeltaNeutralMM extends IStrategy {
       `Technical failures in rebalancing positions to maintain healthy health factor may result in liquidations.`,
       ..._risks.slice(1),
     ];
-    this.secondaryToken = secondaryTokenName;
-    this.strategyAddress = strategyAddress;
+  }
+
+  getSteps() {
+    return [
+      {
+        name: `Supply's your ${this.token.name} to ${this.protocol1.name}`,
+        optimizer: this.optimizer,
+        filter: [this.filterMainToken],
+      },
+      {
+        name: `Borrow ${this.secondaryToken} from ${this.protocol1.name}`,
+        optimizer: this.optimizer,
+        filter: [this.filterSecondaryToken],
+      },
+      {
+        name: `Deposit ${this.secondaryToken} to ${this.protocol2.name}`,
+        optimizer: this.optimizer,
+        filter: [this.filterSecondaryToken],
+      },
+      {
+        name: `Borrow ${this.token.name} from ${this.protocol2.name}`,
+        optimizer: this.optimizer,
+        filter: [this.filterMainToken],
+      },
+      {
+        name: `Loop back to step 1, repeat 3 more times`,
+        optimizer: this.getLookRepeatYieldAmount,
+        filter: [this.filterMainToken],
+      },
+      {
+        name: `Re-invest your STRK Rewards every 7 days (Compound)`,
+        optimizer: this.compounder,
+        filter: [this.filterTokenByProtocol('STRK', this.protocol1)],
+      },
+    ];
   }
 
   filterMainToken(
@@ -130,6 +133,7 @@ export class DeltaNeutralMM extends IStrategy {
     amount: string,
     prevActions: StrategyAction[],
   ) {
+    console.log('filterMainToken', pools);
     const dapp =
       prevActions.length == 0 || prevActions.length == 4
         ? this.protocol1
@@ -187,17 +191,19 @@ export class DeltaNeutralMM extends IStrategy {
   ) {
     console.log('getLookRepeatYieldAmount', amount, actions);
     let full_amount = Number(amount);
-    this.stepAmountFactors.slice(0, 4).forEach((factor, i) => {
+    this.stepAmountFactors.slice(0, actions.length).forEach((factor, i) => {
       full_amount /= factor;
     });
-    const excessFactor = this.stepAmountFactors[4];
+    const excessFactor = this.stepAmountFactors[actions.length];
     const amount1 = excessFactor * full_amount;
     const exp1 = amount1 * this.actions[0].pool.apr;
     const amount2 = this.stepAmountFactors[1] * amount1;
     const exp2 =
       amount2 * (this.actions[2].pool.apr - this.actions[1].pool.borrow.apr);
-    const amount3 = this.stepAmountFactors[3] * amount2;
-    const exp3 = -amount3 * this.actions[3].pool.borrow.apr;
+    const amount3 =
+      this.actions.length >= 4 ? this.stepAmountFactors[3] * amount2 : 0;
+    const exp3 =
+      this.actions.length >= 4 ? -amount3 * this.actions[3].pool.borrow.apr : 0;
     const effecitveAmount = amount1 - amount3;
     const effectiveAPR = (exp1 + exp2 + exp3) / effecitveAmount;
     const pool: PoolInfo = { ...eligiblePools[0] };

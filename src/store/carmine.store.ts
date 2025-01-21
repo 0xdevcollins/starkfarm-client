@@ -48,14 +48,16 @@ export class Carmine extends Jediswap {
         const poolData = myData[config.name];
         if (!poolData || !poolData.data) return;
 
-        let category: Category;
+        const category: Category[] = [];
         const riskFactor = 3;
         if (config.name.endsWith('(USDC)')) {
-          category = Category.Stable;
+          category.push(Category.Stable);
         } else if (config.name.endsWith('(STRK)')) {
-          category = Category.STRK;
+          category.push(Category.STRK);
+        } else if (config.name.endsWith('(ETH)')) {
+          category.push(Category.ETH);
         } else {
-          category = Category.Others;
+          category.push(Category.Others);
         }
 
         const logo1 =

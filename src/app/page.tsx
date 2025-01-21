@@ -31,11 +31,11 @@ import { useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 
 const banner_images = [
-  {
-    desktop: '/banners/strkfarm_braavos.jpg',
-    mobile: '/banners/strkfarm_braavos.jpg',
-    link: 'https://x.com/strkfarm/status/1871870516686209314',
-  },
+  // {
+  //   desktop: '/banners/strkfarm_braavos.svg',
+  //   mobile: '/banners/strkfarm_braavos_mobile.svg',
+  //   link: 'https://starknet.quest/quest/235',
+  // },
   {
     desktop: '/banners/endur.svg',
     mobile: '/banners/endur_mobile.svg',

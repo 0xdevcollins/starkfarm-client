@@ -6,13 +6,11 @@ import { atom } from 'jotai';
 import { atomWithQuery, AtomWithQueryResult } from 'jotai-tanstack-query';
 import { IDapp } from './IDapp.store';
 import {
-  APRSplit,
   Category,
+  getCategoriesFromName,
   PoolInfo,
-  PoolMetadata,
   PoolType,
   ProtocolAtoms,
-  StrkDexIncentivesAtom,
 } from './pools';
 
 interface EkuboBaseAprDoc {
@@ -81,82 +79,85 @@ export class Ekubo extends IDapp<EkuboBaseAprDoc> {
   name = 'Ekubo';
   link = 'https://app.ekubo.org/positions';
   logo = 'https://app.ekubo.org/favicon.ico';
-
   incentiveDataKey = 'Ekubo';
+  supportedPools = [
+    'ETH/USDC',
+    'STRK/USDC',
+    'STRK/ETH',
+    'kSTRK/STRK',
+    'xSTRK/STRK',
+    'USDC/USDT',
+    'USDC',
+    'USDT',
+    'ETH',
+    'STRK',
+  ];
 
   _computePoolsInfo(data: any) {
     try {
-      const myData = data[0][this.incentiveDataKey];
-      const baseInfo = data[1];
-      if (!myData) return [];
+      const poolsInfo = data;
+      if (!poolsInfo) return [];
+
+      const poolData = this.calcBaseAPY(poolsInfo);
       const pools: PoolInfo[] = [];
 
-      Object.keys(myData)
-        .filter(this.commonVaultFilter)
-        .forEach((poolName) => {
-          const arr = myData[poolName];
-          let category = Category.Others;
-          let riskFactor = 3;
-          if (poolName === 'USDC/USDT') {
-            category = Category.Stable;
-            riskFactor = 0.5;
-          } else if (poolName.includes('STRK')) {
-            category = Category.STRK;
-          }
+      poolData?.forEach((pool) => {
+        if (!this.supportedPools.includes(pool.pool)) return;
 
-          const tokens: TokenName[] = <TokenName[]>poolName.split('/');
-          const logo1 = CONSTANTS.LOGOS[tokens[0]];
-          const logo2 = CONSTANTS.LOGOS[tokens[1]];
+        const isStable = pool.pool === 'USDC/USDT';
+        const category: Category[] = getCategoriesFromName(
+          pool.pool, // poolName
+          isStable, // isStable condition
+        );
+        const riskFactor = isStable ? 0.5 : 3;
 
-          const poolInfo: PoolInfo = {
-            pool: {
-              id: this.getPoolId(this.name, poolName),
-              name: poolName,
-              logos: [logo1, logo2],
-            },
-            protocol: {
-              name: this.name,
-              link: this.link,
-              logo: this.logo,
-            },
-            apr: arr[arr.length - 1].apr,
-            tvl: arr[arr.length - 1].tvl_usd,
-            aprSplits: [
-              {
-                apr: arr[arr.length - 1].apr,
-                title: 'STRK rewards',
-                description: 'Starknet DeFi Spring incentives',
-              },
-            ],
-            category,
-            type: PoolType.DEXV3,
-            lending: {
-              collateralFactor: 0,
-            },
-            borrow: {
-              borrowFactor: 0,
-              apr: 0,
-            },
-            additional: {
-              tags: [StrategyLiveStatus.ACTIVE],
-              riskFactor,
-              isAudited: false, // TODO: Update this
-            },
-          };
+        const tokens: TokenName[] = <TokenName[]>pool.pool.split('/');
+        const logo1 = CONSTANTS.LOGOS[tokens[0]];
+        const logo2 = CONSTANTS.LOGOS[tokens[1]];
 
-          const { rewardAPY } = this.getBaseAPY(poolInfo, baseInfo);
-          if (rewardAPY) {
-            poolInfo.apr = rewardAPY;
-            poolInfo.aprSplits = [
-              {
-                apr: rewardAPY,
-                title: 'STRK rewards',
-                description: 'Starknet DeFi Spring incentives',
-              },
-            ];
-          }
-          pools.push(poolInfo);
-        });
+        const poolInfo: PoolInfo = {
+          pool: {
+            id: this.getPoolId(this.name, pool.pool),
+            name: pool.pool,
+            logos: [logo1, logo2],
+          },
+          protocol: {
+            name: this.name,
+            link: this.link,
+            logo: this.logo,
+          },
+          apr: pool.apyBase + pool.apyReward,
+          tvl: pool.tvlUsd,
+          aprSplits: [
+            {
+              apr: pool.apyBase,
+              title: 'Base APR',
+              description: '',
+            },
+            {
+              apr: pool?.apyReward,
+              title: 'STRK rewards',
+              description: 'Starknet DeFi Spring incentives',
+            },
+          ],
+          category,
+          type: PoolType.DEXV3,
+          lending: {
+            collateralFactor: 0,
+          },
+          borrow: {
+            borrowFactor: 0,
+            apr: 0,
+          },
+          additional: {
+            tags: [StrategyLiveStatus.ACTIVE],
+            riskFactor,
+            isAudited: false, // TODO: Update this
+          },
+        };
+
+        pools.push(poolInfo);
+      });
 
       return pools;
     } catch (err) {
@@ -165,33 +166,8 @@ export class Ekubo extends IDapp<EkuboBaseAprDoc> {
     }
   }
 
-  commonVaultFilter(poolName: string) {
-    const supportedPools = [
-      'ETH/USDC',
-      'STRK/USDC',
-      'STRK/ETH',
-      'USDC/USDT',
-      'USDC',
-      'USDT',
-      'ETH',
-      'STRK',
-      'SSTRK/USDC',
-      'SSTRK/ETH',
-      'SSTRK',
-    ];
-    console.log('filter2', poolName, supportedPools.includes(poolName));
-    return supportedPools.includes(poolName);
-  }
-
-  getBaseAPY(p: PoolInfo, data: AtomWithQueryResult<EkuboBaseAprDoc, Error>) {
-    let rewardAPY: number = 0;
-    let baseAPY: number | 'Err' = 'Err';
-    let splitApr: APRSplit | null = null;
-    const metadata: PoolMetadata | null = null;
-
+  calcBaseAPY(data: AtomWithQueryResult<EkuboBaseAprDoc, Error>) {
     if (data.isSuccess) {
-      const poolName = p.pool.name;
-
       const {
         tokens,
         defiSpringData,
@@ -216,7 +192,7 @@ export class Ekubo extends IDapp<EkuboBaseAprDoc> {
         }
       };
 
-      const pools = pairData.topPairs
+      return pairData.topPairs
         .map((p) => {
           const t0 = BigInt(p.token0);
           const t1 = BigInt(p.token1);
@@ -248,7 +224,7 @@ export class Ekubo extends IDapp<EkuboBaseAprDoc> {
               Math.pow(10, token1.decimals);
 
           const apyBase = (feesUsd * 365) / tvlUsd;
-          const apyReward = springPair ? springPair.currentApr : undefined;
+          const apyReward = springPair ? springPair.currentApr : 0;
 
           return {
             pool: `${token0.symbol}/${token1.symbol}`,
@@ -266,25 +242,7 @@ export class Ekubo extends IDapp<EkuboBaseAprDoc> {
         })
         .filter((p) => !!p)
         .sort((a, b) => b.tvlUsd - a.tvlUsd);
-
-      const pool = pools.find((p) => p.pool === poolName);
-
-      baseAPY = pool ? pool.apyBase : 0;
-      rewardAPY = pool && pool.apyReward ? pool.apyReward : 0;
-
-      splitApr = {
-        apr: baseAPY,
-        title: 'Base APR',
-        description: 'Subject to position range',
-      };
     }
-
-    return {
-      baseAPY,
-      rewardAPY,
-      splitApr,
-      metadata,
-    };
   }
 
   async getData(): Promise<EkuboBaseAprDoc> {
@@ -345,13 +303,11 @@ const EkuboAtoms: ProtocolAtoms = {
     },
   })),
   pools: atom((get) => {
-    const poolsInfo = get(StrkDexIncentivesAtom);
     const empty: PoolInfo[] = [];
     if (!EkuboAtoms.baseAPRs) return empty;
-    const baseInfo = get(EkuboAtoms.baseAPRs);
+    const poolsInfo = get(EkuboAtoms.baseAPRs);
     if (poolsInfo.data) {
-      const pools = ekubo._computePoolsInfo([poolsInfo.data, baseInfo]);
-      return ekubo.addBaseAPYs(pools, baseInfo);
+      return ekubo._computePoolsInfo(poolsInfo);
     }
 
     return empty;

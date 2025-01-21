@@ -313,6 +313,37 @@ export function CategoryFilters() {
         </TagLabel>
       </Tag>
 
+      {/* ETH pools */}
+      <Tag
+        size="lg"
+        borderRadius="full"
+        mr={'10px'}
+        padding={'6px 10px'}
+        as={'button'}
+        onClick={() => {
+          updateCategory(Category.ETH);
+        }}
+        bg={
+          categoriesFilter.includes(Category.ETH.valueOf())
+            ? 'purple'
+            : 'color1'
+        }
+        marginBottom={'10px'}
+      >
+        <AvatarGroup size={'xs'} spacing={'-15px'} mr={'5px'}>
+          <Avatar
+            src={getTokenInfoFromName('ETH').logo}
+            name="ETH"
+            key={'ETH'}
+          />
+        </AvatarGroup>
+        <TagLabel
+          {...getTextProps(categoriesFilter.includes(Category.ETH.valueOf()))}
+        >
+          {Category.ETH.valueOf()}
+        </TagLabel>
+      </Tag>
+
       {/* Low risk pools */}
       <Tag
         size="lg"

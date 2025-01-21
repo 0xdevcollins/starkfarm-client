@@ -129,13 +129,6 @@ function getAPRWithToolTip(pool: PoolInfo) {
   const tip = (
     <Box width={'300px'}>
       {pool.aprSplits.map((split) => {
-        if (split.apr === 0) {
-          return (
-            <Text key={split.title}>
-              {split.title}: {split.description}
-            </Text>
-          );
-        }
         return (
           <Flex width={'100%'} key={split.title}>
             <Text key="1" width={'70%'}>

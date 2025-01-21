@@ -11,6 +11,7 @@ import { AtomWithQueryResult } from 'jotai-tanstack-query';
 import { LendingSpace } from './lending.base';
 import { IDapp } from './IDapp.store';
 import { customAtomWithFetch } from '@/utils/customAtomWithFetch';
+import { getTokenInfoFromName } from '@/utils';
 
 interface MyBaseAprDoc {
   _id: string;
@@ -60,6 +61,13 @@ const PoolAddresses: { [token: string]: NostraPoolFactor } = {
       '0x024e9b0d6bc79e111e6872bb1ada2a874c25712cf08dfc5bcf0de008a7cca55f',
     borrowFactor: 0.95,
     collateralFactor: 0.8,
+  },
+  xSTRK: {
+    asset: getTokenInfoFromName('xSTRK').address || '',
+    dToken:
+      '0x0424638c9060d08b4820aabbb28347fc7234e2b7aadab58ad0f101e2412ea42d',
+    borrowFactor: 0.8,
+    collateralFactor: 0.6,
   },
 };
 

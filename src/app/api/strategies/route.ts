@@ -9,25 +9,38 @@ import { MY_STORE } from '@/store';
 import MyNumber from '@/utils/MyNumber';
 import { IStrategy, NFTInfo, TokenInfo } from '@/strategies/IStrategy';
 import { STRKFarmStrategyAPIResult } from '@/store/strkfarm.atoms';
+import VesuAtoms, { vesu } from '@/store/vesu.store';
+import EndurAtoms, { endur } from '@/store/endur.store';
 
 export const revalidate = 3600; // 1 hr
 
 const allPoolsAtom = atom<PoolInfo[]>((get) => {
   const pools: PoolInfo[] = [];
-  const poolAtoms = [ZkLendAtoms, NostraLendingAtoms];
+  const poolAtoms = [ZkLendAtoms, NostraLendingAtoms, VesuAtoms, EndurAtoms];
   return poolAtoms.reduce((_pools, p) => _pools.concat(get(p.pools)), pools);
 });
 
 async function getPools(store: any, retry = 0) {
   const allPools: PoolInfo[] | undefined = store.get(allPoolsAtom);
 
-  const minProtocolsRequired = [zkLend.name, nostraLending.name];
+  console.log('allPools', allPools?.length);
+  const minProtocolsRequired = [
+    zkLend.name,
+    nostraLending.name,
+    vesu.name,
+    endur.name,
+  ];
   const hasRequiredPools = minProtocolsRequired.every((p) => {
     if (!allPools) return false;
-    return allPools.some(
-      (pool) => pool.protocol.name === p && pool.type == PoolType.Lending,
-    );
+    return allPools.some((pool) => {
+      console.log('pool.protocol.name', pool.protocol.name);
+      return (
+        pool.protocol.name === p &&
+        (pool.type == PoolType.Lending || pool.type == PoolType.Staking)
+      );
+    });
   });
+  console.log('hasRequiredPools', hasRequiredPools);
   const MAX_RETRIES = 120;
   if (retry >= MAX_RETRIES) {
     throw new Error('Failed to fetch pools');
@@ -71,6 +84,7 @@ async function getStrategyInfo(
     },
     riskFactor: strategy.riskFactor,
     logo: strategy.holdingTokens[0].logo,
+    isAudited: strategy.settings.isAudited || false,
     actions: strategy.actions.map((action) => {
       return {
         name: action.name || '',

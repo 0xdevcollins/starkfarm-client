@@ -16,7 +16,7 @@ import { Contract } from 'starknet';
 import NFTAbi from '../../abi/nft.abi.json';
 import { atomWithQuery } from 'jotai-tanstack-query';
 import { addressAtom } from '@/store/claims.atoms';
-import { copyReferralLink, getReferralUrl } from '@/utils';
+import { copyReferralLink, getHosturl, getReferralUrl } from '@/utils';
 import mixpanel from 'mixpanel-browser';
 
 import {
@@ -199,7 +199,10 @@ const CommunityPage = () => {
             These NFTs unlock future rewards and exclusive incentives.
           </Text>
 
-          <Link href="https://docs.strkfarm.xyz/p/community" isExternal={true}>
+          <Link
+            href={`https://docs.${getHosturl()}/p/community`}
+            isExternal={true}
+          >
             <Button
               margin="auto auto 0 0"
               variant="outline"
@@ -275,7 +278,7 @@ const CommunityPage = () => {
                 </Button>
               </Box>
               <Link
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('I am proud to be part of @strkfarm community. They are issuing points and NFTs for their active users.\n\nJoin using my referral link:')}%20https://strkfarm.xyz/r/${referralCode}`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('I am proud to be part of @strkfarm community. They are issuing points and NFTs for their active users.\n\nJoin using my referral link:')}%20https://${getHosturl()}/r/${referralCode}`}
                 isExternal={true}
               >
                 <Button
@@ -393,7 +396,7 @@ const CommunityPage = () => {
                 <>
                   You&apos;re not eligible, but you can still earn one.{' '}
                   <Link
-                    href="https://docs.strkfarm.xyz/p/community/og-farmer-nft-campaign"
+                    href={`https://docs.${getHosturl()}/p/community/og-farmer-nft-campaign`}
                     textDecoration="underline"
                     isExternal={true}
                   >
