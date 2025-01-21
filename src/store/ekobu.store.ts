@@ -86,6 +86,7 @@ export class Ekubo extends IDapp<EkuboBaseAprDoc> {
     'STRK/ETH',
     'kSTRK/STRK',
     'xSTRK/STRK',
+    'sSTRK/STRK',
     'USDC/USDT',
     'USDC',
     'USDT',
