@@ -96,7 +96,7 @@ export const TOKENS: TokenInfo[] = [
     token: standariseAddress(
       '0x0356f304b154d29d2a8fe22f1cb9107a9b564a733cf6b4cc47fd121ac1af90c9',
     ),
-    name: 'SSTRK',
+    name: 'sSTRK',
     decimals: 18,
     displayDecimals: 2,
     logo: CONSTANTS.LOGOS.STRK,
