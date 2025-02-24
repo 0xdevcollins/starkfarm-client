@@ -40,8 +40,7 @@ const CONSTANTS = {
   AUDIT_REPORT:
     'https://static-assets-8zct.onrender.com/strkfarm/audit_report.pdf',
   NOSTRA: {
-    LENDING_GRAPH_URL:
-      'https://us-east-2.aws.data.mongodb-api.com/app/data-yqlpb/endpoint/data/v1/action/find',
+    LENDING_GRAPH_URL: '/nostra/app/data-yqlpb/endpoint/data/v1/action/find',
   },
   ZKLEND: {
     BASE_APR_API: '/zklend/api/pools',

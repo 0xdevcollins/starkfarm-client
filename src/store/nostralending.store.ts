@@ -69,6 +69,12 @@ const PoolAddresses: { [token: string]: NostraPoolFactor } = {
     borrowFactor: 0.8,
     collateralFactor: 0.6,
   },
+  sSTRK: {
+    asset: getTokenInfoFromName('sSTRK').address || '',
+    dToken: '',
+    borrowFactor: 0.8,
+    collateralFactor: 0.6,
+  },
 };
 
 export class NostraLending extends IDapp<LendingSpace.MyBaseAprDoc[]> {
@@ -97,10 +103,12 @@ export class NostraLending extends IDapp<LendingSpace.MyBaseAprDoc[]> {
     let splitApr: APRSplit | null = null;
     let metadata: PoolMetadata | null = null;
     if (data.isSuccess) {
+      console.log('nostra', data);
       const items: {
         documents: MyBaseAprDoc[];
       } = data.data;
       const item = items.documents.find((doc) => doc.asset === p.pool.name);
+      console.log('nostra', item);
       if (item) {
         baseAPY = Number(item.lendingApy) / 10 ** 18;
         splitApr = {
@@ -153,8 +161,10 @@ const NostraLendingAtoms: ProtocolAtoms2 = {
     if (!NostraLendingAtoms.baseAPRs) return empty;
 
     const baseInfo = get(NostraLendingAtoms.baseAPRs);
+    console.log('nostra', baseInfo);
     if (poolsInfo.data) {
       const pools = nostraLending._computePoolsInfo(poolsInfo.data);
+      console.log('nostra', pools);
       return nostraLending.addBaseAPYs(pools, baseInfo);
     }
     return empty;
