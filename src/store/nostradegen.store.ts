@@ -28,6 +28,7 @@ export class NostraDegen extends Jediswap {
           const rewardApr = parseFloat(poolData.rewardApr);
 
           const _poolName = poolData.id.replace('-', '/');
+          if (_poolName.includes('sSTRK')) return;
           const isStable = _poolName.includes('USDC/USDT');
           const category = getCategoriesFromName(_poolName, isStable);
           const riskFactor = isStable ? 0.5 : 3;

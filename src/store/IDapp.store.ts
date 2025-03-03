@@ -71,7 +71,6 @@ export class IDapp<BaseAPYT> {
       'ETH',
       'STRK',
       'xSTRK',
-      'sSTRK',
     ];
     console.log('filter', poolName, supportedPools.includes(poolName));
     // return !poolName.includes('DAI') && !poolName.includes('WSTETH') && !poolName.includes('BTC');

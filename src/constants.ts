@@ -9,11 +9,9 @@ const LOGOS = {
   WBTC: '/zklend/icons/tokens/wbtc.svg?w=20',
   ETH: '/zklend/icons/tokens/eth.svg?w=20',
   STRK: '/zklend/icons/tokens/strk.svg?w=20',
-  SSTRK: '/zklend/icons/tokens/strk.svg?w=20',
   DAI: '/zklend/icons/tokens/dai.svg?w=20',
   kSTRK: '/zklend/icons/tokens/kstrk.svg?w=20',
   xSTRK: '/imagedelivery/c1f44170-c1b0-4531-3d3b-5f0bacfe1300/logo',
-  sSTRK: '/imagedelivery/e28697ac-a8ba-462f-0d40-ad33b285c200/logo',
 };
 
 export type TokenName =
@@ -24,7 +22,6 @@ export type TokenName =
   | 'WBTC'
   | 'DAI'
   | 'kSTRK'
-  | 'sSTRK'
   | 'xSTRK';
 
 const CONSTANTS = {
@@ -90,19 +87,6 @@ const CONSTANTS = {
 };
 
 export const TOKENS: TokenInfo[] = [
-  {
-    token: standariseAddress(
-      '0x0356f304b154d29d2a8fe22f1cb9107a9b564a733cf6b4cc47fd121ac1af90c9',
-    ),
-    name: 'sSTRK',
-    decimals: 18,
-    displayDecimals: 2,
-    logo: CONSTANTS.LOGOS.STRK,
-    minAmount: MyNumber.fromEther('10', 18),
-    maxAmount: MyNumber.fromEther('10000', 18),
-    stepAmount: MyNumber.fromEther('10', 18),
-    isERC4626: false,
-  },
   {
     token: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7',
     name: 'ETH',

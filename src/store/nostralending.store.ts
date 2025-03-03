@@ -69,12 +69,6 @@ const PoolAddresses: { [token: string]: NostraPoolFactor } = {
     borrowFactor: 0.8,
     collateralFactor: 0.6,
   },
-  sSTRK: {
-    asset: getTokenInfoFromName('sSTRK').address || '',
-    dToken: '',
-    borrowFactor: 0.8,
-    collateralFactor: 0.6,
-  },
 };
 
 export class NostraLending extends IDapp<LendingSpace.MyBaseAprDoc[]> {

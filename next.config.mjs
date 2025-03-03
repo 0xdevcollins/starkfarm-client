@@ -2,9 +2,9 @@
 const nextConfig = {
   // output: 'export',
   compiler: {
-    // removeConsole: {
-    //   exclude: ['error'],
-    // },
+    removeConsole: {
+      exclude: ['error'],
+    },
   },
   async rewrites() {
     return [
@@ -40,10 +40,6 @@ const nextConfig = {
       {
         source: '/myswap/:path*',
         destination: 'https://myswap-cl-charts.s3.amazonaws.com/:path*',
-      },
-      {
-        source: '/nimbora/:path*',
-        destination: 'https://stats.nimbora.io/:path*',
       },
       {
         source: '/imagedelivery/:path*',

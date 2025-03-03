@@ -6,8 +6,6 @@ import EndurAtoms, { endur } from './endur.store';
 import HaikoAtoms, { haiko } from './haiko.store';
 import HashstackAtoms, { hashstack } from './hashstack.store';
 import MySwapAtoms, { mySwap } from './myswap.store';
-import NimboraDexAtoms, { nimboraDex } from './nimboradex.store';
-import NimboraStakingAtoms, { nimboraStaking } from './nimborastaking.store';
 import NostraDegenAtoms, { nostraDegen } from './nostradegen.store';
 import NostraDexAtoms, { nostraDex } from './nostradex.store';
 import NostraLendingAtoms, { nostraLending } from './nostralending.store';
@@ -100,16 +98,6 @@ export const PROTOCOLS = [
     name: vesu.name,
     class: vesu,
     atoms: VesuAtoms,
-  },
-  {
-    name: nimboraDex.name,
-    class: nimboraDex,
-    atoms: NimboraDexAtoms,
-  },
-  {
-    name: nimboraStaking.name,
-    class: nimboraStaking,
-    atoms: NimboraStakingAtoms,
   },
 ];
 
